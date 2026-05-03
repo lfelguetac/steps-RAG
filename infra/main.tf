@@ -284,10 +284,10 @@ resource "aws_lambda_function" "embed" {
   memory_size      = 512
   source_code_hash = data.archive_file.embed.output_base64sha256
 
-  environment {
+    environment {
     variables = {
       HF_API_KEY  = var.hf_api_key
-      HF_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+      HF_EMBED_MODEL = "BAAI/bge-base-en-v1.5"
     }
   }
 }
@@ -337,12 +337,12 @@ resource "aws_lambda_function" "query" {
   memory_size      = 512
   source_code_hash = data.archive_file.query.output_base64sha256
 
-  environment {
+    environment {
     variables = {
       TABLE_NAME   = aws_dynamodb_table.embeddings.name
       HF_API_KEY   = var.hf_api_key
       GROQ_API_KEY = var.groq_api_key
-      HF_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+      HF_EMBED_MODEL = "BAAI/bge-base-en-v1.5"
       GROQ_MODEL   = "llama-3.1-8b-instant"
       TOP_K        = "5"
     }
