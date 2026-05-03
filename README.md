@@ -73,6 +73,19 @@ curl -X POST https://<api_id>.execute-api.us-east-1.amazonaws.com/prod/query \
   -d '{"question": "¿De qué trata el documento?"}'
 ```
 
+**Respuesta:**
+```json
+{
+  "answer": "El documento es un CV de un ingeniero backend...",
+  "sources": [
+    {"text": "LUIS FELIPE ELGUETA CONTRERAS SENIOR BACKEND...", "score": 0.397, "document": "cv.pdf"},
+    {"text": "14+ años en industrias de...", "score": 0.312, "document": "cv.pdf"}
+  ]
+}
+```
+
+> Las fuentes incluyen el campo `document` para saber de qué archivo viene cada chunk. Puedes mezclar documentos de distintos temas en el mismo pipeline.
+
 ## Costos
 
 ### Modelo de costo: serverless puro, pagas por uso

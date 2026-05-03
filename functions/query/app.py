@@ -107,6 +107,6 @@ Answer:"""
         "statusCode": 200,
         "body": json.dumps({
             "answer": answer,
-            "sources": [{"text": c["text"][:200], "score": round(c["score"], 4)} for c in top_chunks]
+            "sources": [{"text": c["text"][:200], "score": round(c["score"], 4), "document": c["document"]} for c in top_chunks]
         })
     }
