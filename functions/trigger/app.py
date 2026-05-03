@@ -13,8 +13,9 @@ STATE_MACHINE_ARN = os.environ["STATE_MACHINE_ARN"]
 def handler(event, context):
     logger.info(f"Received event: {json.dumps(event)}")
 
-    bucket = event.get("bucket", os.environ.get("UPLOAD_BUCKET"))
-    key = event.get("key", "")
+    body = json.loads(event.get("body", "{}")) if isinstance(event.get("body"), str) else event
+    bucket = body.get("bucket", os.environ.get("UPLOAD_BUCKET"))
+    key = body.get("key", "")
 
     if not bucket or not key:
         return {

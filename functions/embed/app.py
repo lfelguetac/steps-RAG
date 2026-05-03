@@ -7,8 +7,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 HF_API_KEY = os.environ["HF_API_KEY"]
-HF_MODEL = os.environ.get("HF_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
-HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+HF_MODEL = os.environ.get("HF_EMBED_MODEL", "BAAI/bge-base-en-v1.5")
+HF_API_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}?pipeline=feature-extraction"
 
 
 def get_embedding(text):

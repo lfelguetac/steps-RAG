@@ -3,8 +3,8 @@ import requests
 import json
 import os
 import logging
+import math
 from decimal import Decimal
-import numpy as np
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -13,9 +13,9 @@ dynamodb = boto3.resource("dynamodb")
 
 HF_API_KEY = os.environ["HF_API_KEY"]
 GROQ_API_KEY = os.environ["GROQ_API_KEY"]
-HF_MODEL = os.environ.get("HF_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+HF_MODEL = os.environ.get("HF_EMBED_MODEL", "BAAI/bge-base-en-v1.5")
 GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
-HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+HF_API_URL = f"https://router.huggingface.co/hf-inference/models/{HF_MODEL}?pipeline=feature-extraction"
 GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 TABLE_NAME = os.environ["TABLE_NAME"]
 TOP_K = int(os.environ.get("TOP_K", 5))
@@ -25,7 +25,7 @@ def get_embedding(text):
     resp = requests.post(
         HF_API_URL,
         headers={"Authorization": f"Bearer {HF_API_KEY}"},
-        json={"inputs": text, "options": {"wait_for_model": True}}
+        json={"inputs": text}
     )
     if resp.status_code != 200:
         raise Exception(f"HF API error: {resp.status_code} - {resp.text}")
@@ -38,9 +38,10 @@ def get_embedding(text):
 
 
 def cosine_similarity(a, b):
-    a = np.array(a, dtype=float)
-    b = np.array(b, dtype=float)
-    return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    return dot / (norm_a * norm_b)
 
 
 def handler(event, context):
