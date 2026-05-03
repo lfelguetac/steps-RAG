@@ -1,4 +1,4 @@
-import boto3
+import requests
 import json
 import os
 import logging
@@ -6,8 +6,25 @@ import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-bedrock = boto3.client("bedrock-runtime")
-MODEL_ID = os.environ.get("EMBED_MODEL", "amazon.titan-embed-text-v2:0")
+HF_API_KEY = os.environ["HF_API_KEY"]
+HF_MODEL = os.environ.get("HF_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+
+
+def get_embedding(text):
+    response = requests.post(
+        HF_API_URL,
+        headers={"Authorization": f"Bearer {HF_API_KEY}"},
+        json={"inputs": text, "options": {"wait_for_model": True}}
+    )
+    if response.status_code != 200:
+        raise Exception(f"HF API error: {response.status_code} - {response.text}")
+    result = response.json()
+    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], (int, float)):
+        return result
+    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list):
+        return result[0]
+    raise Exception(f"Unexpected HF response: {result}")
 
 
 def handler(event, context):
@@ -16,13 +33,7 @@ def handler(event, context):
 
     embeddings = []
     for i, chunk in enumerate(chunks):
-        body = json.dumps({"inputText": chunk})
-        resp = bedrock.invoke_model(
-            modelId=MODEL_ID,
-            body=body
-        )
-        resp_body = json.loads(resp["body"].read())
-        embedding = resp_body["embedding"]
+        embedding = get_embedding(chunk)
         embeddings.append({
             "chunk_id": f"{document}_{i}",
             "embedding": embedding,

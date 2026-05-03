@@ -1,0 +1,17 @@
+*.pyc
+__pycache__/
+*.zip
+botocore/
+boto3/
+s3transfer/
+urllib3/
+dateutil/
+jmespath/
+six.py
+six-*.dist-info/
+python_dateutil-*.dist-info/
+numpy-*.dist-info/
+PyPDF2/
+PyPDF2-*.dist-info/
+numpy/
+*.dist-info/

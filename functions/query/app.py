@@ -1,4 +1,5 @@
 import boto3
+import requests
 import json
 import os
 import logging
@@ -8,21 +9,32 @@ import numpy as np
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-bedrock = boto3.client("bedrock-runtime")
 dynamodb = boto3.resource("dynamodb")
 
-EMBED_MODEL = os.environ.get("EMBED_MODEL", "amazon.titan-embed-text-v2:0")
-LLM_MODEL = os.environ.get("LLM_MODEL", "anthropic.claude-3-haiku-20240307-v1:0")
+HF_API_KEY = os.environ["HF_API_KEY"]
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+HF_MODEL = os.environ.get("HF_EMBED_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+GROQ_MODEL = os.environ.get("GROQ_MODEL", "llama-3.1-8b-instant")
+HF_API_URL = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{HF_MODEL}"
+GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
 TABLE_NAME = os.environ["TABLE_NAME"]
 TOP_K = int(os.environ.get("TOP_K", 5))
 
 
 def get_embedding(text):
-    resp = bedrock.invoke_model(
-        modelId=EMBED_MODEL,
-        body=json.dumps({"inputText": text})
+    resp = requests.post(
+        HF_API_URL,
+        headers={"Authorization": f"Bearer {HF_API_KEY}"},
+        json={"inputs": text, "options": {"wait_for_model": True}}
     )
-    return json.loads(resp["body"].read())["embedding"]
+    if resp.status_code != 200:
+        raise Exception(f"HF API error: {resp.status_code} - {resp.text}")
+    result = resp.json()
+    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], (int, float)):
+        return result
+    if isinstance(result, list) and len(result) > 0 and isinstance(result[0], list):
+        return result[0]
+    raise Exception(f"Unexpected HF response: {result}")
 
 
 def cosine_similarity(a, b):
@@ -72,16 +84,23 @@ Question: {question}
 
 Answer:"""
 
-    llm_resp = bedrock.invoke_model(
-        modelId=LLM_MODEL,
-        body=json.dumps({
-            "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 1024,
-            "messages": [{"role": "user", "content": prompt}]
-        })
+    groq_resp = requests.post(
+        GROQ_API_URL,
+        headers={
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": GROQ_MODEL,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 1024
+        }
     )
-    llm_body = json.loads(llm_resp["body"].read())
-    answer = llm_body["content"][0]["text"]
+    if groq_resp.status_code != 200:
+        raise Exception(f"Groq API error: {groq_resp.status_code} - {groq_resp.text}")
+
+    groq_body = groq_resp.json()
+    answer = groq_body["choices"][0]["message"]["content"]
 
     return {
         "statusCode": 200,

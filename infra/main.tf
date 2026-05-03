@@ -106,16 +106,6 @@ resource "aws_iam_role_policy" "lambda_permissions" {
       {
         Effect = "Allow"
         Action = [
-          "bedrock:InvokeModel"
-        ]
-        Resource = [
-          "arn:aws:bedrock:${var.aws_region}::foundation-model/amazon.titan-embed-text-v2:0",
-          "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
-        ]
-      },
-      {
-        Effect = "Allow"
-        Action = [
           "states:StartExecution",
           "states:DescribeExecution"
         ]
@@ -296,7 +286,8 @@ resource "aws_lambda_function" "embed" {
 
   environment {
     variables = {
-      EMBED_MODEL = "amazon.titan-embed-text-v2:0"
+      HF_API_KEY  = var.hf_api_key
+      HF_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
     }
   }
 }
@@ -348,10 +339,12 @@ resource "aws_lambda_function" "query" {
 
   environment {
     variables = {
-      TABLE_NAME  = aws_dynamodb_table.embeddings.name
-      EMBED_MODEL = "amazon.titan-embed-text-v2:0"
-      LLM_MODEL   = "anthropic.claude-3-haiku-20240307-v1:0"
-      TOP_K       = "5"
+      TABLE_NAME   = aws_dynamodb_table.embeddings.name
+      HF_API_KEY   = var.hf_api_key
+      GROQ_API_KEY = var.groq_api_key
+      HF_EMBED_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+      GROQ_MODEL   = "llama-3.1-8b-instant"
+      TOP_K        = "5"
     }
   }
 }
