@@ -74,7 +74,17 @@ def handler(event, context):
     scored.sort(key=lambda x: x["score"], reverse=True)
     top_chunks = scored[:TOP_K]
 
-    context_text = "\n\n".join(c["text"] for c in top_chunks)
+    max_context_chars = 3000
+    context_parts = []
+    used = 0
+    for c in top_chunks:
+        available = max_context_chars - used
+        if available <= 0:
+            break
+        chunk_text = c["text"][:available]
+        context_parts.append(chunk_text)
+        used += len(chunk_text)
+    context_text = "\n\n".join(context_parts)
 
     prompt = f"""Answer the following question based on the provided context. If the context doesn't contain relevant information, say so.
 
