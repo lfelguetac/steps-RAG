@@ -8,6 +8,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 dynamodb = boto3.resource("dynamodb")
+s3 = boto3.client("s3")
 TABLE_NAME = os.environ["TABLE_NAME"]
 table = dynamodb.Table(TABLE_NAME)
 
@@ -21,8 +22,13 @@ def float_to_decimal(obj):
 
 
 def handler(event, context):
-    embeddings = event["embeddings"]
+    s3_bucket = event["embeddings_s3_bucket"]
+    s3_key = event["embeddings_s3_key"]
     document = event["document"]
+    bucket = event["bucket"]
+
+    response = s3.get_object(Bucket=s3_bucket, Key=s3_key)
+    embeddings = json.loads(response["Body"].read())
 
     with table.batch_writer() as batch:
         for emb in embeddings:
@@ -39,5 +45,5 @@ def handler(event, context):
     return {
         "indexed": len(embeddings),
         "document": document,
-        "bucket": event["bucket"]
+        "bucket": bucket
     }
